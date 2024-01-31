@@ -21,10 +21,12 @@ primary_region = 'cdg'
 
 [env]
   NERVES_HUB_APP = "web"
-  HOST = "spendra-nerves-hub-web.fly.dev"
+  HOST = "hub.spendra.swiss"
   DATABASE_AUTO_MIGRATOR = "true"
   DATABASE_SSL = "true"
   DATABASE_INET6 = "true"
   DATABASE_POOL_SIZE = "10"
   FIRMWARE_UPLOAD_BACKEND = "S3"
-  S3_REGION="eu-central-1"
+  S3_REGION = "eu-central-1"
+  FROM_EMAIL = "no-reply@spendra.swiss"
+  MAILGUN_DOMAIN = "mg.spendra.swiss"
