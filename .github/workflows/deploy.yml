@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [ "*" ]
+jobs:
+  deploy:
+    permissions:
+      packages: write
+      contents: read
+      deployments: write
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
+    environment: production
+    timeout-minutes: 20
+    env:
+      DOCKER_BUILDKIT: 1
+      VERSION: ${{ github.sha }}
+      OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: docker/setup-buildx-action@v3
+    - name: Install 1Password CLI
+      uses: 1password/install-cli-action@v1
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        bundler-cache: true
+    - name: Fetch SSH Private Key from 1Password
+      id: fetch_key
+      run: |
+        echo "Fetching the SSH private key..."
+        SSH_PRIVATE_KEY=$(op item get "SSH" --vault "NervesHub Server" --fields PRIVATE_KEY --format json | jq -r '.value')
+        echo "SSH_PRIVATE_KEY<<EOF" >> $GITHUB_ENV
+        echo "$SSH_PRIVATE_KEY" >> $GITHUB_ENV
+        echo "EOF" >> $GITHUB_ENV
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.9.1
+      with:
+        ssh-private-key: ${{ env.SSH_PRIVATE_KEY }}
+    - name: Configure SSH Keep-Alive
+      run: |
+        mkdir -p ~/.ssh
+        echo "Host *" >> ~/.ssh/config
+        echo "  ServerAliveInterval 60" >> ~/.ssh/config
+        echo "  ServerAliveCountMax 10" >> ~/.ssh/config
+        chmod 600 ~/.ssh/config
+    - run: echo $(gh config get -h github.com oauth_token)
+    - name: Registry login
+      run: bundle exec kamal registry login
+    - name: Build and push
+      run: bundle exec kamal build push --version=$VERSION
+    - name: Deploy
+      uses: nick-fields/retry@v3
+      with:
+        timeout_minutes: 10
+        max_attempts: 2
+        retry_wait_seconds: 10
+        command: bundle exec kamal deploy -P --version=$VERSION
+    - name: Registry logout
+      if: always()
+      run: bundle exec kamal registry logout

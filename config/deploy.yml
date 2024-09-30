@@ -1,0 +1,135 @@
+service: nerves_hub_web
+
+image: spendra-inc/nerves_hub_web
+
+volumes:
+  - "nerves_hub_certificates:/etc/ssl/"
+
+servers:
+  web:
+    hosts:
+      - 162.55.36.205
+    proxy:
+      host: hub.spendra.swiss
+      ssl: true
+      app_port: 4000
+    options:
+      memory: 1G
+      cpus: 1
+    env:
+      clear:
+        NERVES_HUB_APP: web
+        DATABASE_AUTO_MIGRATOR: true
+        RELEASE_NODE: nerves_hub_web@162.55.36.205
+    labels:
+      traefik.enable: true
+      traefik.tcp.routers.epmd.rule: "ClientIP(`0.0.0.0/0`)"
+      traefik.tcp.routers.epmd.priority: 5
+      traefik.tcp.routers.epmd.entryPoints: epmd
+      traefik.tcp.routers.epmd.service: epmd
+      traefik.tcp.services.epmd.loadBalancer.server.port: 6789
+  device:
+    hosts:
+      - 138.199.151.32
+    proxy: false
+    options:
+      memory: 1G
+      cpus: 1
+    env:
+      clear:
+        HOST: device.hub.spendra.swiss
+        NERVES_HUB_APP: device
+        DEVICE_PORT: 8080
+        DATABASE_AUTO_MIGRATOR: false
+        LOG_LEVEL: debug
+        RELEASE_NODE: nerves_hub_device@138.199.151.32
+        DEVICE_SSL_KEYFILE: /etc/ssl/device.hub.spendra.swiss.key
+        DEVICE_SSL_CERTFILE: /etc/ssl/device.hub.spendra.swiss.chained.crt
+    labels:
+      traefik.enable: true
+      # TCP Router for epmd
+      traefik.tcp.routers.epmd.rule: "ClientIP(`0.0.0.0/0`)"
+      traefik.tcp.routers.epmd.priority: 5
+      traefik.tcp.routers.epmd.entryPoints: epmd
+      traefik.tcp.routers.epmd.service: epmd
+      traefik.tcp.services.epmd.loadBalancer.server.port: 6789
+      # TCP Router for Secure WebSocket & HTTPS
+      traefik.tcp.routers.web.rule: "HostSNI(`*`)"
+      traefik.tcp.routers.web.entryPoints: web,websecure
+      traefik.tcp.routers.web.service: web
+      traefik.tcp.routers.web.tls.passthrough: true # App handles SSL
+      traefik.tcp.services.web.loadBalancer.server.port: 8080
+
+accessories:
+  traefik_device:
+    service: traefik
+    image: traefik:v3.1
+    roles:
+      - device
+    options:
+      publish:
+        - "6789:6789"
+        - "80:80"
+        - "443:443"
+    cmd: "--providers.docker --providers.docker.exposedByDefault=false --entryPoints.epmd.address=:6789 --entryPoints.web.address=:80 --entryPoints.websecure.address=:443 --log.level=INFO"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+  traefik_web:
+    service: traefik
+    image: traefik:v3.1
+    roles:
+      - web
+    options:
+      publish:
+        - "6789:6789"
+    cmd: "--providers.docker --providers.docker.exposedByDefault=false --entryPoints.epmd.address=:6789 --log.level=INFO"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+
+registry:
+  server: ghcr.io
+  username: ignore
+  password:
+    - GITHUB_TOKEN
+
+env:
+  secret:
+    - RELEASE_COOKIE
+    - DATABASE_PEM
+    - DATABASE_URL
+    - LIVE_VIEW_SIGNING_SALT
+    - MAILGUN_API_KEY
+    - S3_ACCESS_KEY_ID
+    - S3_SECRET_ACCESS_KEY
+    - SECRET_KEY_BASE
+  clear:
+    S3_BUCKET_NAME: pnp-resources-prod
+    S3_REGION: eu-central-1
+    TZ: Europe/Zurich
+    HOST: hub.spendra.swiss
+    DATABASE_SSL: true
+    DATABASE_POOL_SIZE: 10
+    FIRMWARE_UPLOAD_BACKEND: S3
+    FROM_EMAIL: no-reply@spendra.swiss
+    MAILGUN_DOMAIN: mg.spendra.swiss
+    OTEL_EXPORTER: otlp
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://shared-otel_collector:4318
+    OTEL_SERVICE_NAME: nerves-hub-web
+
+# Aliases are triggered with "bin/kamal <alias>". You can overwrite arguments on invocation:
+# "bin/kamal logs -r job" will tail logs from the first server in the job section.
+aliases:
+  console: app exec --interactive --reuse "/app/bin/nerves_hub remote"
+  shell: app exec --interactive --reuse "/bin/sh"
+  logs: app logs -f
+
+builder:
+  arch: amd64
+
+ssh:
+  user: spendra
+
+logging:
+  driver: fluentd
+  options:
+    tag: nerves_hub_web.prod
