@@ -81,7 +81,7 @@ defmodule NervesHub.MixProject do
       {:hackney, "~> 1.16"},
       {:hlclock, "~> 1.0"},
       {:jason, "~> 1.2", override: true},
-      {:libcluster_postgres, "~> 0.1.2"},
+      {:libcluster_postgres, github: "spendra-inc/libcluster_postgres", branch: "main"},
       {:logfmt, "~> 3.3"},
       {:mox, "~> 1.0", only: [:test, :dev]},
       {:nimble_csv, "~> 1.1"},

@@ -1,0 +1,30 @@
+# fly.toml app configuration file generated for nerves-hub on 2024-01-30T04:47:35+01:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'spendra-nerves-hub-web'
+primary_region = 'cdg'
+
+[http_service]
+  internal_port = 4000
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = false
+  min_machines_running = 1
+  processes = ['app']
+
+[[vm]]
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 1024
+
+[env]
+  NERVES_HUB_APP = "web"
+  HOST = "spendra-nerves-hub-web.fly.dev"
+  DATABASE_AUTO_MIGRATOR = "true"
+  DATABASE_SSL = "true"
+  DATABASE_INET6 = "true"
+  DATABASE_POOL_SIZE = "10"
+  FIRMWARE_UPLOAD_BACKEND = "S3"
+  S3_REGION="eu-central-1"

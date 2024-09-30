@@ -1,0 +1,34 @@
+# fly.toml app configuration file generated for nerves-hub on 2024-01-30T04:47:35+01:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'spendra-nerves-hub-device'
+primary_region = 'cdg'
+
+[http_service]
+  internal_port = 443
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = false
+  min_machines_running = 1
+  processes = ['app']
+
+[[vm]]
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 1024
+
+[env]
+  NERVES_HUB_APP = "device"
+  HOST = "spendra-nerves-hub-device.fly.dev"
+  DATABASE_AUTO_MIGRATOR = "false" # Run migrations only from the web app to avoid conflicts
+  DATABASE_SSL = "true"
+  DATABASE_INET6 = "true"
+  DATABASE_POOL_SIZE = "10"
+  FIRMWARE_UPLOAD_BACKEND = "S3"
+  S3_REGION="eu-central-1"
+  # TODO: This is the default certificate from https://github.com/nerves-hub/nerves_hub_web/blob/main/test/fixtures/ssl/device.nerves-hub.org.pem
+  DEVICE_SSL_CERT = "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNBekNDQWFxZ0F3SUJBZ0lKQVBpR3pjYTdONjgrTUFvR0NDcUdTTTQ5QkFNQ01EY3hFakFRQmdOVkJBb00KQ1U1bGNuWmxjMGgxWWpFaE1COEdBMVVFQXd3WVRtVnlkbVZ6U0hWaUlGTmxjblpsY2lCU2IyOTBJRU5CTUI0WApEVEl5TVRJeE5USXdNREF3TUZvWERUSTNNVEl4TlRJeE1EQXdNRm93TmpFU01CQUdBMVVFQ2d3SlRtVnlkbVZ6ClNIVmlNU0F3SGdZRFZRUUREQmRPWlhKMlpYTklkV0lnUkdWMmFXTmxJRk5sY25abGNqQlpNQk1HQnlxR1NNNDkKQWdFR0NDcUdTTTQ5QXdFSEEwSUFCRkFRYnNJLzNOT0lpTW52Sk5Pb3oxaUNkWm12YWM1TkFic29rcHRNaXZMNAo4Rm1RTktzK1gwT00wWnl2WXhFNHZ4eS9iUTRaak5FRlA4NDY1Nk52akNPamdaOHdnWnd3Q1FZRFZSMFRCQUl3CkFEQU9CZ05WSFE4QkFmOEVCQU1DQmFBd0hRWURWUjBsQkJZd0ZBWUlLd1lCQlFVSEF3RUdDQ3NHQVFVRkJ3TUMKTUIwR0ExVWREZ1FXQkJUV25xdmg4MUZxMHRKdnBsWmFIYVhYZE5LSEJ6QWZCZ05WSFNNRUdEQVdnQlNsS21NbQpEMzA3YXhPekZPTnhCTHYzclR3eXBEQWdCZ05WSFJFRUdUQVhnaFZrWlhacFkyVXVibVZ5ZG1WekxXaDFZaTV2CmNtY3dDZ1lJS29aSXpqMEVBd0lEUndBd1JBSWdlWVJyczBvZFBwOFFFUHh4NDlMaUt6S3R1b1gwbFZFNHdlb2UKckJ3LzdQa0NJQXZ5RUZlY0t4T3ZoTW8reWJBVkFjUjFPRUloZHFuUkhLUkdKNFNXSFF3VwotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCgo="
+  # TODO: This is the default private key from https://github.com/nerves-hub/nerves_hub_web/blob/main/test/fixtures/ssl/device.nerves-hub.org-key.pem
+  DEVICE_SSL_KEY = "LS0tLS1CRUdJTiBFQyBQUklWQVRFIEtFWS0tLS0tCk1IY0NBUUVFSU5PWUZnZkdEYlpMN21MNDdKdk03UVVYV01HdG90Q2FSZ05CUVFvd3JLWUJvQW9HQ0NxR1NNNDkKQXdFSG9VUURRZ0FFVUJCdXdqL2MwNGlJeWU4azA2alBXSUoxbWE5cHprMEJ1eWlTbTB5Szh2andXWkEwcXo1ZgpRNHpSbks5akVUaS9ITDl0RGhtTTBRVS96anJubzIrTUl3PT0KLS0tLS1FTkQgRUMgUFJJVkFURSBLRVktLS0tLQoK"
