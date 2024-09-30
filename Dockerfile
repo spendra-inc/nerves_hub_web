@@ -7,10 +7,16 @@ ARG BUILDER_IMAGE="hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-ubuntu-$
 ARG RUNNER_IMAGE="ubuntu:${DISTRO}"
 ARG DEBIAN_FRONTEND=noninteractive
 
+FROM ${BUILDER_IMAGE} as builder
+
+# Enable single-mapped RWX memory for JIT code: https://www.erlang.org/doc/apps/erts/erl_cmd#%2BJMsingle
+# Required to build cross-platform releases (e.g. Linux on silicon-mac hosts)
+ENV ERL_AFLAGS "+JMsingle true"
+
 ###
 ### First Stage - Fetch deps for building web assets
 ###
-FROM ${BUILDER_IMAGE} as deps
+FROM builder as deps
 
 ENV MIX_ENV=prod
 
@@ -44,7 +50,7 @@ RUN npm ci && npm cache clean --force && npm run deploy
 ###
 ### Third Stage - Building the Release
 ###
-FROM ${BUILDER_IMAGE} as build
+FROM builder as build
 
 # install dependencies
 RUN apt-get update -y && apt-get install -y build-essential git ca-certificates curl gnupg \

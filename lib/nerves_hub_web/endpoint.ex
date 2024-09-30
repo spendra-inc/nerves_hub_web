@@ -14,6 +14,8 @@ defmodule NervesHubWeb.Endpoint do
     signing_salt: {__MODULE__, :fetch_signing_salt, []}
   ]
 
+  plug NervesHubWeb.HealthCheck
+
   socket("/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]])
 
   socket("/socket", NervesHubWeb.UserSocket,

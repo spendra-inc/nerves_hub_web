@@ -124,7 +124,7 @@ if config_env() == :prod do
       if System.get_env("DEVICE_SSL_KEY") do
         ssl_key = System.fetch_env!("DEVICE_SSL_KEY") |> Base.decode64!()
         File.mkdir_p!("/app/tmp")
-        File.write!("/app/tmp/ssl_key.crt", ssl_key)
+        :ok = File.write("/app/tmp/ssl_key.crt", ssl_key)
         "/app/tmp/ssl_key.crt"
       else
         ssl_keyfile = System.get_env("DEVICE_SSL_KEYFILE", "/etc/ssl/#{host}-key.pem")
@@ -140,7 +140,7 @@ if config_env() == :prod do
       if encoded_cert = System.get_env("DEVICE_SSL_CERT") do
         ssl_cert = Base.decode64!(encoded_cert)
         File.mkdir_p!("/app/tmp")
-        File.write!("/app/tmp/ssl_cert.crt", ssl_cert)
+        :ok = File.write("/app/tmp/ssl_cert.crt", ssl_cert)
         "/app/tmp/ssl_cert.crt"
       else
         ssl_certfile = System.get_env("DEVICE_SSL_CERTFILE", "/etc/ssl/#{host}.pem")
@@ -262,6 +262,28 @@ if config_env() == :prod do
 
   config :nerves_hub,
     database_auto_migrator: System.get_env("DATABASE_AUTO_MIGRATOR", "true") == "true"
+
+  # Libcluster is using Postgres for Node discovery
+  # The library only accepts keyword configs, so the DATABASE_URL has to be
+  # parsed and put together with the ssl pieces from above.
+  postgres_config = Ecto.Repo.Supervisor.parse_url(System.fetch_env!("DATABASE_URL"))
+
+  libcluster_db_config =
+    [port: 5432]
+    |> Keyword.merge(postgres_config)
+    |> Keyword.take([:hostname, :username, :password, :database, :port])
+    |> Keyword.merge(ssl: System.get_env("DATABASE_SSL", "true") == "true")
+    |> Keyword.merge(ssl_opts: database_ssl_opts, socket_options: database_socket_options)
+    |> Keyword.merge(parameters: [])
+    |> Keyword.merge(channel_name: "nerves_hub_clustering")
+
+  config :libcluster,
+    topologies: [
+      postgres: [
+        strategy: LibclusterPostgres.Strategy,
+        config: libcluster_db_config
+      ]
+    ]
 end
 
 # Libcluster is using Postgres for Node discovery
@@ -382,26 +404,27 @@ config :nerves_hub, NervesHub.Uploads,
 if config_env() == :prod do
   config :swoosh, local: false
 
-  if System.get_env("SMTP_SERVER") do
-    config :nerves_hub, NervesHub.SwooshMailer,
-      adapter: Swoosh.Adapters.SMTP,
-      relay: System.fetch_env!("SMTP_SERVER"),
-      port: System.fetch_env!("SMTP_PORT") |> String.to_integer(),
-      username: System.fetch_env!("SMTP_USERNAME"),
-      password: System.fetch_env!("SMTP_PASSWORD"),
-      auth: :always,
-      ssl: System.get_env("SMTP_SSL", "false") == "true",
-      tls: :always,
-      tls_options: [
-        verify: :verify_peer,
-        cacerts: :public_key.cacerts_get(),
-        depth: 99,
-        server_name_indication: String.to_charlist(System.get_env("SMTP_SERVER")),
-        customize_hostname_check: [
-          match_fun: :public_key.pkix_verify_hostname_match_fun(:https)
-        ]
-      ],
-      retries: 1
+  cond do
+    not is_nil(System.get_env("SMTP_SERVER")) ->
+      config :nerves_hub, NervesHub.SwooshMailer,
+        adapter: Swoosh.Adapters.SMTP,
+        relay: System.fetch_env!("SMTP_SERVER"),
+        port: System.fetch_env!("SMTP_PORT"),
+        username: System.fetch_env!("SMTP_USERNAME"),
+        password: System.fetch_env!("SMTP_PASSWORD"),
+        ssl: System.get_env("SMTP_SSL", "false") == "true",
+        tls: :always,
+        retries: 1
+
+    not is_nil(System.get_env("MAILGUN_API_KEY")) ->
+      config :nerves_hub, NervesHub.SwooshMailer,
+        adapter: Swoosh.Adapters.Mailgun,
+        api_key: System.get_env("MAILGUN_API_KEY"),
+        domain: System.get_env("MAILGUN_DOMAIN"),
+        base_url: System.get_env("MAILGUN_BASE_URL", "https://api.eu.mailgun.net/v3")
+
+    true ->
+      nil
   end
 end
 
@@ -458,3 +481,11 @@ config :nerves_hub, :audit_logs,
 
 config :nerves_hub, NervesHub.RateLimit,
   limit: System.get_env("DEVICE_CONNECT_RATE_LIMIT", "100") |> String.to_integer()
+
+if System.get_env("FIRMWARE_MAX_FILE_SIZE") do
+  config :nerves_hub, NervesHub.Firmwares.Upload, max_size: String.to_integer(System.get_env("FIRMWARE_MAX_FILE_SIZE"))
+end
+
+if System.get_env("ARCHIVE_MAX_FILE_SIZE") do
+  config :nerves_hub, NervesHub.Uploads, max_size: String.to_integer(System.get_env("ARCHIVE_MAX_FILE_SIZE"))
+end
