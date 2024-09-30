@@ -2,17 +2,26 @@
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
+# Note: Since SSL termination is required on the app, [[services.ports]] should not include a `handlers` config.
 
 app = 'spendra-nerves-hub-device'
 primary_region = 'cdg'
 
-[http_service]
-  internal_port = 443
-  force_https = true
-  auto_stop_machines = false
-  auto_start_machines = false
-  min_machines_running = 1
-  processes = ['app']
+[[services]]
+  protocol = "tcp"
+  internal_port = 8080
+  processes = ["app"]
+
+  [[services.ports]]
+    port = 80
+    force_https = false
+
+  [[services.ports]]
+    port = 443
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 25
+    soft_limit = 20
 
 [[vm]]
   cpu_kind = 'shared'
@@ -21,7 +30,8 @@ primary_region = 'cdg'
 
 [env]
   NERVES_HUB_APP = "device"
-  HOST = "device.hub.spendra.swiss"
+  HOST = "spendra-nerves-hub-device.fly.dev"
+  DEVICE_PORT = "8080"
   DATABASE_AUTO_MIGRATOR = "false" # Run migrations only from the web app to avoid conflicts
   DATABASE_SSL = "true"
   DATABASE_INET6 = "true"
@@ -30,3 +40,5 @@ primary_region = 'cdg'
   S3_REGION="eu-central-1"
   FROM_EMAIL = "no-reply@spendra.swiss"
   MAILGUN_DOMAIN = "mg.spendra.swiss"
+  RELEASE_COOKIE = "rbCViLyR6vLRdBmvN7sCDBb5loiWPYqSsPX_rmwHZD_VeK84em8WaA=="
+  LOG_LEVEL = "debug"

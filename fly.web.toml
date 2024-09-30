@@ -30,3 +30,4 @@ primary_region = 'cdg'
   S3_REGION = "eu-central-1"
   FROM_EMAIL = "no-reply@spendra.swiss"
   MAILGUN_DOMAIN = "mg.spendra.swiss"
+  RELEASE_COOKIE = "rbCViLyR6vLRdBmvN7sCDBb5loiWPYqSsPX_rmwHZD_VeK84em8WaA=="
