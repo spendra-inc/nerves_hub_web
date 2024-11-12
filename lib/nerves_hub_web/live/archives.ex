@@ -45,7 +45,7 @@ defmodule NervesHubWeb.Live.Archives do
       accept: ~w(.fw),
       max_entries: 1,
       auto_upload: true,
-      max_file_size: 200_000_000,
+      max_file_size: Application.get_env(:nerves_hub, :archive_max_file_size, 200_000_000),
       progress: &handle_progress/3
     )
     |> render_with(&upload_archive_template/1)

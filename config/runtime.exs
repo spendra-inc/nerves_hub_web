@@ -384,3 +384,15 @@ config :nerves_hub, :audit_logs,
 
 config :nerves_hub, NervesHub.RateLimit,
   limit: System.get_env("DEVICE_CONNECT_RATE_LIMIT", "100") |> String.to_integer()
+
+if System.get_env("FIRMWARE_MAX_FILE_SIZE") do
+  config :nerves_hub,
+         :firmware_max_file_size,
+         String.to_integer(System.get_env("FIRMWARE_MAX_FILE_SIZE"))
+end
+
+if System.get_env("ARCHIVE_MAX_FILE_SIZE") do
+  config :nerves_hub,
+         :archive_max_file_size,
+         String.to_integer(System.get_env("ARCHIVE_MAX_FILE_SIZE"))
+end
