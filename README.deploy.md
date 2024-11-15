@@ -23,10 +23,12 @@ Current list of required secrets for the app are:
 
 ## Device
 
-Use `fly.device.toml` to deploy this app. Note that a IPv4 address is required for device connection to work (at least on networks that don't support IPv6).
+Use `fly.device.toml` to deploy this app. Note that a dedicated IPv4 address is required for device connection to work (at least on networks that don't support IPv6).
+Also, it is required to remove the shared IP address that fly allocates automatically (run `fly ips list -a spendra-nerves-hub-device` to find it).
 
 ```sh
 fly ips allocate-v4 -a spendra-nerves-hub-device # only once
+fly ips release [shared-ip-address] -a spendra-nerves-hub-device
 fly deploy -c fly.device.toml
 ```
 
