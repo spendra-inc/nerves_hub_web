@@ -9,3 +9,7 @@
 
 ## Tweak GC to run more often
 ##-env ERL_FULLSWEEP_AFTER 10
+
+## epmd runs on 4369, but we restrict distribution to a fixed range
+-kernel inet_dist_listen_min 25800
+-kernel inet_dist_listen_max 25900

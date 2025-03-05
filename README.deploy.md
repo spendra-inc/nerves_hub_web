@@ -1,14 +1,14 @@
 # Deployment Guide
 
-Nerves Hub is split into two applications: web and device. Both need to be deployed as separate apps on Fly.
+Nerves Hub is split into two applications: web and device. Both need to be deployed on seperate servers using Kamal.
 
-## Web
-
-Use `fly.web.toml` to deploy this app:
+To Deploy, run:
 
 ```sh
-fly deploy -c fly.web.toml
+kamal deploy
 ```
+
+## Web
 
 Current list of required secrets for the app are:
 * `DATABASE_PEM`
@@ -23,8 +23,9 @@ Current list of required secrets for the app are:
 
 ## Device
 
-Use `fly.device.toml` to deploy this app. Note that a dedicated IPv4 address is required for device connection to work (at least on networks that don't support IPv6).
-Also, it is required to remove the shared IP address that fly allocates automatically (run `fly ips list -a spendra-nerves-hub-device` to find it).
+Note that a dedicated IPv4 address is required for device connection to work (at least on networks that don't support IPv6).
+
+If running on Fly, it is required to remove the shared IP address that fly allocates automatically (run `fly ips list -a spendra-nerves-hub-device` to find it).
 
 ```sh
 fly ips allocate-v4 -a spendra-nerves-hub-device # only once

@@ -9,8 +9,9 @@ config :phoenix, logger: false
 # NervesHub Web
 #
 config :nerves_hub, NervesHubWeb.Endpoint,
-  server: true,
-  force_ssl: [rewrite_on: [:x_forwarded_proto]]
+  server: true
+  # No need to force SSL as proxy guarantees SSL termination
+  # force_ssl: [rewrite_on: [:x_forwarded_proto]]
 
 ##
 # NervesHub Device
