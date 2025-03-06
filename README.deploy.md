@@ -45,3 +45,7 @@ Current list of required secrets for the app are:
 * `SECRET_KEY_BASE`
 * `DEVICE_SSL_KEY`: Base 64 encoded private key for device endpoint SSL (Run `File.read!("/path/to/key.pem") |> Base.encode64()` to generate).
 * `DEVICE_SSL_CERT`: Base 64 encoded certificate for device endpoint SSL (Run `File.read!("/path/to/cert.pem") |> Base.encode64()` to generate).
+
+## Remote (IEx Console)
+
+Note that because of epmd-less deployment, the remote iex console doesn't work. If there is a need to make changes on the production database that aren't possible through UI, it is possible to run a local server pointing to the production database.
