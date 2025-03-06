@@ -13,14 +13,18 @@ servers:
     options:
       memory: 1G
       cpus: 1
-      publish:
-        - 4369:4369
-        - 25800-25900:25800-25900
     env:
       clear:
         NERVES_HUB_APP: web
         DATABASE_AUTO_MIGRATOR: true
         RELEASE_NODE: nerves_hub_web@162.55.36.205
+    labels:
+      traefik.enable: true
+      traefik.tcp.routers.epmd.rule: "ClientIP(`0.0.0.0/0`)"
+      traefik.tcp.routers.epmd.priority: 5
+      traefik.tcp.routers.epmd.entryPoints: epmd
+      traefik.tcp.routers.epmd.service: epmd
+      traefik.tcp.services.epmd.loadBalancer.server.port: 6789
   device:
     hosts:
       - 138.199.151.32
@@ -28,20 +32,56 @@ servers:
     options:
       memory: 1G
       cpus: 1
-      publish:
-        - 8080:8080
-        - 4369:4369
-        - 25800-25900:25800-25900
     env:
       clear:
         NERVES_HUB_APP: device
         DEVICE_PORT: 8080
         DATABASE_AUTO_MIGRATOR: false
         LOG_LEVEL: debug
-        RELEASE_NODE: nerves_hub_web@138.199.151.32
+        RELEASE_NODE: nerves_hub_device@138.199.151.32
       secret:
         - DEVICE_SSL_KEY
         - DEVICE_SSL_CERT
+    labels:
+      traefik.enable: true
+      # TCP Router for epmd
+      traefik.tcp.routers.epmd.rule: "ClientIP(`0.0.0.0/0`)"
+      traefik.tcp.routers.epmd.priority: 5
+      traefik.tcp.routers.epmd.entryPoints: epmd
+      traefik.tcp.routers.epmd.service: epmd
+      traefik.tcp.services.epmd.loadBalancer.server.port: 6789
+      # TCP Router for Secure WebSocket & HTTPS
+      traefik.tcp.routers.web.rule: "HostSNI(`*`)"
+      traefik.tcp.routers.web.entryPoints: web,websecure
+      traefik.tcp.routers.web.service: web
+      traefik.tcp.routers.web.tls.passthrough: true # App handles SSL
+      traefik.tcp.services.web.loadBalancer.server.port: 8080
+
+accessories:
+  traefik_device:
+    service: traefik
+    image: traefik:v3.1
+    roles:
+      - device
+    options:
+      publish:
+        - "6789:6789"
+        - "80:80"
+        - "443:443"
+    cmd: "--providers.docker --providers.docker.exposedByDefault=false --entryPoints.epmd.address=:6789 --entryPoints.web.address=:80 --entryPoints.websecure.address=:443 --log.level=INFO"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+  traefik_web:
+    service: traefik
+    image: traefik:v3.1
+    roles:
+      - web
+    options:
+      publish:
+        - "6789:6789"
+    cmd: "--providers.docker --providers.docker.exposedByDefault=false --entryPoints.epmd.address=:6789 --log.level=INFO"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
 
 registry:
   server: ghcr.io
