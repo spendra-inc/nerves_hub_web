@@ -2,6 +2,9 @@ service: nerves_hub_web
 
 image: spendra-inc/nerves_hub_web
 
+volumes:
+  - "nerves_hub_certificates:/etc/ssl/"
+
 servers:
   web:
     hosts:
@@ -34,14 +37,14 @@ servers:
       cpus: 1
     env:
       clear:
+        HOST: device.hub.spendra.swiss
         NERVES_HUB_APP: device
         DEVICE_PORT: 8080
         DATABASE_AUTO_MIGRATOR: false
         LOG_LEVEL: debug
         RELEASE_NODE: nerves_hub_device@138.199.151.32
-      secret:
-        - DEVICE_SSL_KEY
-        - DEVICE_SSL_CERT
+        DEVICE_SSL_KEYFILE: /etc/ssl/device.hub.spendra.swiss.key
+        DEVICE_SSL_CERTFILE: /etc/ssl/device.hub.spendra.swiss.chained.crt
     labels:
       traefik.enable: true
       # TCP Router for epmd
