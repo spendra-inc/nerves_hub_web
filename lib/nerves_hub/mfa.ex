@@ -5,8 +5,8 @@ defmodule NervesHub.MFA do
 
   import Ecto.Query, warn: false
 
-  alias NervesHub.Repo
   alias NervesHub.MFA.UserTOTP
+  alias NervesHub.Repo
 
   @doc """
   Gets the %UserTOTP{} entry, if any.
