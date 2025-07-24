@@ -1,0 +1,20 @@
+<div class="form-page-wrapper">
+  <h2 class="form-title">Two-Factor Authentication</h2>
+  <p class="text-center mb-4">Enter the authentication code from your authenticator app</p>
+
+  <%= form_for @conn, Routes.mfa_path(@conn, :create), [as: :mfa, class: "form-page"], fn f -> %>
+    <div class="form-group">
+      <label for="code_input">Authentication Code</label>
+      {text_input(f, :code, class: "form-control", id: "code_input", maxlength: "8", autocomplete: "off")}
+      <div class="has-error">{error_tag(f, :code)}</div>
+    </div>
+
+    <div class="flex-column align-items-center">
+      {submit("Verify", class: "btn btn-primary btn-lg w-100")}
+    </div>
+  <% end %>
+
+  <div class="text-center mt-3">
+    <a href={Routes.session_path(@conn, :new)} class="text-muted">Back to Login</a>
+  </div>
+</div>
