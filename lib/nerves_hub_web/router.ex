@@ -201,6 +201,9 @@ defmodule NervesHubWeb.Router do
     get("/login", SessionController, :new)
     post("/login", SessionController, :create)
 
+    get("/mfa", MFAController, :new)
+    post("/mfa", MFAController, :create)
+
     get("/register", AccountController, :new)
     post("/register", AccountController, :create)
 

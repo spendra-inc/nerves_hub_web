@@ -12,7 +12,7 @@ defmodule NervesHubWeb.SessionController do
     %{"email" => email, "password" => password} = user_params
 
     if user = Accounts.get_user_by_email_and_password(email, password) do
-      Auth.log_in_user(conn, user, user_params)
+      login_or_redirect_to_mfa(conn, user, user_params)
     else
       # In order to prevent user enumeration attacks, don't disclose whether the email is registered.
       conn
@@ -26,5 +26,17 @@ defmodule NervesHubWeb.SessionController do
     conn
     |> put_flash(:info, "Logged out successfully.")
     |> NervesHubWeb.Auth.log_out_user()
+  end
+
+  defp login_or_redirect_to_mfa(conn, user, user_params) do
+    if NervesHub.MFA.get_user_totp(user) do
+      conn
+      |> put_session(:mfa_user_id, user.id)
+      |> put_session(:mfa_user_params, user_params)
+      |> redirect(to: ~p"/mfa")
+    else
+      # No MFA, proceed with normal login
+      Auth.log_in_user(conn, user, user_params)
+    end
   end
 end
