@@ -489,9 +489,11 @@ config :nerves_hub, NervesHub.RateLimit,
   limit: System.get_env("DEVICE_CONNECT_RATE_LIMIT", "100") |> String.to_integer()
 
 if System.get_env("FIRMWARE_MAX_FILE_SIZE") do
-  config :nerves_hub, NervesHub.Firmwares.Upload, max_size: String.to_integer(System.get_env("FIRMWARE_MAX_FILE_SIZE"))
+  config :nerves_hub, NervesHub.Firmwares.Upload,
+    max_size: String.to_integer(System.get_env("FIRMWARE_MAX_FILE_SIZE"))
 end
 
 if System.get_env("ARCHIVE_MAX_FILE_SIZE") do
-  config :nerves_hub, NervesHub.Uploads, max_size: String.to_integer(System.get_env("ARCHIVE_MAX_FILE_SIZE"))
+  config :nerves_hub, NervesHub.Uploads,
+    max_size: String.to_integer(System.get_env("ARCHIVE_MAX_FILE_SIZE"))
 end
