@@ -453,7 +453,13 @@ if otlp_endpoint = System.get_env("OTLP_ENDPOINT") do
   config :opentelemetry_exporter,
     otlp_protocol: :http_protobuf,
     otlp_endpoint: otlp_endpoint,
-    otlp_headers: [{System.get_env("OTLP_AUTH_HEADER"), System.get_env("OTLP_AUTH_HEADER_VALUE")}]
+    # The exporter turns each header into a charlist and fails to start on
+    # {nil, nil}, so an endpoint without auth (shared-otel_collector) sends none.
+    otlp_headers:
+      if(auth_header = System.get_env("OTLP_AUTH_HEADER"),
+        do: [{auth_header, System.get_env("OTLP_AUTH_HEADER_VALUE", "")}],
+        else: []
+      )
 
   otlp_sampler_ratio =
     if ratio = System.get_env("OTLP_SAMPLER_RATIO") do
@@ -483,9 +489,11 @@ config :nerves_hub, NervesHub.RateLimit,
   limit: System.get_env("DEVICE_CONNECT_RATE_LIMIT", "100") |> String.to_integer()
 
 if System.get_env("FIRMWARE_MAX_FILE_SIZE") do
-  config :nerves_hub, NervesHub.Firmwares.Upload, max_size: String.to_integer(System.get_env("FIRMWARE_MAX_FILE_SIZE"))
+  config :nerves_hub, NervesHub.Firmwares.Upload,
+    max_size: String.to_integer(System.get_env("FIRMWARE_MAX_FILE_SIZE"))
 end
 
 if System.get_env("ARCHIVE_MAX_FILE_SIZE") do
-  config :nerves_hub, NervesHub.Uploads, max_size: String.to_integer(System.get_env("ARCHIVE_MAX_FILE_SIZE"))
+  config :nerves_hub, NervesHub.Uploads,
+    max_size: String.to_integer(System.get_env("ARCHIVE_MAX_FILE_SIZE"))
 end
