@@ -2,9 +2,6 @@ service: nerves_hub_web
 
 image: spendra-inc/nerves_hub_web
 
-volumes:
-  - "nerves_hub_certificates:/etc/ssl/"
-
 servers:
   web:
     hosts:
@@ -20,10 +17,11 @@ servers:
       clear:
         NERVES_HUB_APP: web
         DATABASE_AUTO_MIGRATOR: true
-        RELEASE_NODE: nerves_hub_web@162.55.36.205
+        # Erlang distribution runs over the tailnet only (traefik_web below).
+        RELEASE_NODE: nerves_hub_web@100.112.116.41
     labels:
       traefik.enable: true
-      traefik.tcp.routers.epmd.rule: "ClientIP(`0.0.0.0/0`)"
+      traefik.tcp.routers.epmd.rule: "HostSNI(`*`)"
       traefik.tcp.routers.epmd.priority: 5
       traefik.tcp.routers.epmd.entryPoints: epmd
       traefik.tcp.routers.epmd.service: epmd
@@ -35,6 +33,10 @@ servers:
     options:
       memory: 1G
       cpus: 1
+      # Device TLS key and certificate, renewed on the host by gatemedia/infra's
+      # sslmate_certs (cinc/docs/spendra.md). Mounted at its own path so
+      # /etc/ssl, the CA store, comes from the image.
+      volume: "nerves_hub_certificates:/etc/ssl/nerves_hub"
     env:
       clear:
         HOST: device.hub.spendra.swiss
@@ -42,13 +44,15 @@ servers:
         DEVICE_PORT: 8080
         DATABASE_AUTO_MIGRATOR: false
         LOG_LEVEL: debug
-        RELEASE_NODE: nerves_hub_device@138.199.151.32
-        DEVICE_SSL_KEYFILE: /etc/ssl/device.hub.spendra.swiss.key
-        DEVICE_SSL_CERTFILE: /etc/ssl/device.hub.spendra.swiss.chained.crt
+        OTEL_SERVICE_NAME: nerves-hub-device
+        # Erlang distribution runs over the tailnet only (traefik_device below).
+        RELEASE_NODE: nerves_hub_device@100.125.228.116
+        DEVICE_SSL_KEYFILE: /etc/ssl/nerves_hub/device.hub.spendra.swiss.key
+        DEVICE_SSL_CERTFILE: /etc/ssl/nerves_hub/device.hub.spendra.swiss.chained.crt
     labels:
       traefik.enable: true
       # TCP Router for epmd
-      traefik.tcp.routers.epmd.rule: "ClientIP(`0.0.0.0/0`)"
+      traefik.tcp.routers.epmd.rule: "HostSNI(`*`)"
       traefik.tcp.routers.epmd.priority: 5
       traefik.tcp.routers.epmd.entryPoints: epmd
       traefik.tcp.routers.epmd.service: epmd
@@ -67,8 +71,10 @@ accessories:
     roles:
       - device
     options:
+      # Erlang distribution on the Tailscale address only; devices reach 80
+      # and 443 publicly.
       publish:
-        - "6789:6789"
+        - "100.125.228.116:6789:6789"
         - "80:80"
         - "443:443"
     cmd: "--providers.docker --providers.docker.exposedByDefault=false --entryPoints.epmd.address=:6789 --entryPoints.web.address=:80 --entryPoints.websecure.address=:443 --log.level=INFO"
@@ -80,8 +86,9 @@ accessories:
     roles:
       - web
     options:
+      # Erlang distribution on the Tailscale address only.
       publish:
-        - "6789:6789"
+        - "100.112.116.41:6789:6789"
     cmd: "--providers.docker --providers.docker.exposedByDefault=false --entryPoints.epmd.address=:6789 --log.level=INFO"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
@@ -112,8 +119,7 @@ env:
     FIRMWARE_UPLOAD_BACKEND: S3
     FROM_EMAIL: no-reply@spendra.swiss
     MAILGUN_DOMAIN: mg.spendra.swiss
-    OTEL_EXPORTER: otlp
-    OTEL_EXPORTER_OTLP_ENDPOINT: http://shared-otel_collector:4318
+    OTLP_ENDPOINT: http://shared-otel_collector:4318
     OTEL_SERVICE_NAME: nerves-hub-web
 
 # Aliases are triggered with "bin/kamal <alias>". You can overwrite arguments on invocation:

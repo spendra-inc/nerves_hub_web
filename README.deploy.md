@@ -8,6 +8,8 @@ To Deploy, run:
 kamal deploy
 ```
 
+A push to the `spendra` branch runs the same deploy from GitHub Actions. Neither recreates the Traefik accessories: a change to their configuration (published ports, command) takes effect only with `kamal accessory reboot traefik_web` or `kamal accessory reboot traefik_device`.
+
 ## Web
 
 Current list of required secrets for the app are:
@@ -48,26 +50,9 @@ Current list of required secrets for the app are:
 
 ### Provision Device Server
 
-In addition to the shared kamal provisioning script, the device server uses SSL certificates and must be configured separately using the following script:
+Both hosts were set up by spendra-inc/kamal-server-bootstrap (archived) and are maintained by Cinc from gatemedia/infra since their enrolment in its `spendra` policy group: see [`cinc/docs/spendra.md`](https://github.com/gatemedia/infra/blob/main/cinc/docs/spendra.md). That includes the device endpoint's TLS certificate: Cinc's `sslmate_certs` profile installs SSLMate renewals of `device.hub.spendra.swiss` into the `nerves_hub_certificates` volume, which the device role mounts at `/etc/ssl/nerves_hub`, and restarts the device container.
 
-```sh
-# ssh spendra@nerves-hub-device
-sudo wget -O /etc/apt/sources.list.d/sslmate1.list https://sslmate.com/apt/ubuntu2410/sslmate1.list
-sudo wget -O /etc/apt/trusted.gpg.d/sslmate.gpg https://sslmate.com/apt/ubuntu2410/sslmate.gpg
-sudo apt-get update
-sudo apt-get install sslmate
-echo -e "api_key <<API_KEY>>\nkey_directory /var/lib/docker/volumes/nerves_hub_certificates/_data \ncert_directory /var/lib/docker/volumes/nerves_hub_certificates/_data" > /tmp/sslmate.conf && sudo mv /tmp/sslmate.conf /etc/sslmate.conf
-echo -e "<<SSL_PRIVATE_KEY>>" >  /tmp/ssl.key && sudo mv /tmp.ssl.key var/lib/docker/volumes/nerves_hub_certificates/_data/device.hub.spendra.swiss.key
-
-sudo tee /etc/cron.daily/sslmate > /dev/null << 'EOF' && sudo chmod +x /etc/cron.daily/sslmate
-#!/bin/sh
-
-if sslmate download --all > /dev/null
-then
-  docker restart $(docker ps --format '{{.Names}}' | grep nerves_hub_web-device) > /dev/null
-fi
-EOF
-```
+The two Erlang nodes are named by their Tailscale addresses and each host's Traefik accessory publishes the distribution port (6789) on that address only, so the nodes connect over the tailnet.
 
 
 ## Remote (IEx Console)
